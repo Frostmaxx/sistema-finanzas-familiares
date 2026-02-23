@@ -5,7 +5,7 @@ require('dotenv').config();
 
 const app = express();
 app.use(cors());
-app.use(express.json()); // Permite al servidor entender datos en formato JSON
+app.use(express.json()); 
 
 // Función para conectar a la base de datos
 async function conectarBD() {
@@ -14,11 +14,13 @@ async function conectarBD() {
         port: process.env.DB_PORT,
         user: process.env.DB_ROOT_USER,
         password: process.env.DB_ROOT_PASSWORD,
-        database: process.env.DB_NAME // Ahora sí especificamos a qué base entrar
+        database: process.env.DB_NAME 
     });
 }
 
-// 1. Ruta rápida para crear un usuario de prueba (Necesitamos uno antes de registrar ingresos)
+// ==========================================
+// 1. USUARIOS
+// ==========================================
 app.post('/api/usuarios', async (req, res) => {
     const { nombre, email, password, id_rol } = req.body;
     try {
@@ -34,64 +36,86 @@ app.post('/api/usuarios', async (req, res) => {
     }
 });
 
-// 2. LA RUTA MÁGICA: Registrar Ingreso y apartar Diezmo automáticamente
+// ==========================================
+// 2. NUEVO: FUENTES DE INGRESO
+// ==========================================
+// A) Crear una nueva fuente
+app.post('/api/fuentes', async (req, res) => {
+    const { id_usuario, nombre, descripcion, periodicidad, es_activa } = req.body;
+    try {
+        const conexion = await conectarBD();
+        const [resultado] = await conexion.query(
+            `INSERT INTO Fuentes_Ingreso (id_usuario, nombre, descripcion, periodicidad, es_activa) VALUES (?, ?, ?, ?, ?)`,
+            [id_usuario, nombre, descripcion, periodicidad, es_activa]
+        );
+        await conexion.end();
+        res.status(201).json({ mensaje: "Fuente de ingreso creada", id_fuente: resultado.insertId });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// B) Obtener la lista de fuentes (Para el menú desplegable)
+app.get('/api/fuentes/:id_usuario', async (req, res) => {
+    try {
+        const conexion = await conectarBD();
+        const [fuentes] = await conexion.query(
+            `SELECT * FROM Fuentes_Ingreso WHERE id_usuario = ?`,
+            [req.params.id_usuario]
+        );
+        await conexion.end();
+        res.status(200).json(fuentes);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ==========================================
+// 3. ACTUALIZADO: INGRESOS Y DIEZMOS (Bimonetario)
+// ==========================================
 app.post('/api/ingresos', async (req, res) => {
-    const { id_usuario, monto, fuente, fecha } = req.body;
+    const { id_usuario, id_fuente, monto_usd, monto_bs, fecha_recepcion } = req.body;
     let conexion;
 
     try {
         conexion = await conectarBD();
-        
-        // INICIAMOS TRANSACCIÓN: O se guardan ingreso y diezmo juntos, o ninguno.
         await conexion.beginTransaction();
 
-        // A) Guardar el ingreso general
+        // Guardar el ingreso con USD y Bs
         const [resIngreso] = await conexion.query(
-            `INSERT INTO Ingresos (id_usuario, monto, fuente, fecha) VALUES (?, ?, ?, ?)`,
-            [id_usuario, monto, fuente, fecha]
+            `INSERT INTO Ingresos (id_usuario, id_fuente, monto_usd, monto_bs, fecha_recepcion) VALUES (?, ?, ?, ?, ?)`,
+            [id_usuario, id_fuente, monto_usd || 0, monto_bs || 0, fecha_recepcion]
         );
         const id_ingreso_nuevo = resIngreso.insertId;
 
-        // B) Calcular el 10% exacto para el fondo ministerial
-        const monto_diezmo = (monto * 0.10).toFixed(2);
+        // Calcular el 10% exacto para ambas monedas
+        const diezmo_usd = ((monto_usd || 0) * 0.10).toFixed(2);
+        const diezmo_bs = ((monto_bs || 0) * 0.10).toFixed(2);
 
-        // C) Guardar el diezmo automatizado
+        // Guardar el diezmo automatizado
         await conexion.query(
-            `INSERT INTO Diezmos (id_ingreso, monto_calculado) VALUES (?, ?)`,
-            [id_ingreso_nuevo, monto_diezmo]
+            `INSERT INTO Diezmos (id_ingreso, diezmo_usd, diezmo_bs) VALUES (?, ?, ?)`,
+            [id_ingreso_nuevo, diezmo_usd, diezmo_bs]
         );
 
-        // CONFIRMAMOS TRANSACCIÓN (Guardar permanentemente)
         await conexion.commit();
-
-        res.status(201).json({
-            mensaje: "¡Éxito! Ingreso registrado y 10% de diezmo apartado automáticamente.",
-            detalle: {
-                ingreso_registrado: monto,
-                diezmo_calculado: monto_diezmo,
-                estado_diezmo: 'Por Entregar'
-            }
-        });
-
+        res.status(201).json({ mensaje: "Ingreso registrado. Diezmos apartados en Bs y $." });
     } catch (error) {
-        // SI ALGO FALLA, DESHACEMOS TODO PARA EVITAR DATOS INCOMPLETOS
         if (conexion) await conexion.rollback();
-        console.error("Error al procesar el ingreso:", error);
-        res.status(500).json({ error: "Fallo en el servidor al registrar el ingreso." });
+        res.status(500).json({ error: "Fallo al registrar el ingreso." });
     } finally {
         if (conexion) await conexion.end();
     }
 });
 
-// 3. Ruta para crear el "Presupuesto Mensual" del Mercado (El Maestro)
+// ==========================================
+// 4. MERCADO (Se mantiene igual)
+// ==========================================
 app.post('/api/mercado/presupuesto', async (req, res) => {
     const { id_usuario, mes, anio, monto_planificado } = req.body;
     try {
         const conexion = await conectarBD();
-        const [resultado] = await conexion.query(
-            `INSERT INTO Presupuestos_Mercado (id_usuario, mes, anio, monto_planificado) VALUES (?, ?, ?, ?)`,
-            [id_usuario, mes, anio, monto_planificado]
-        );
+        const [resultado] = await conexion.query(`INSERT INTO Presupuestos_Mercado (id_usuario, mes, anio, monto_planificado) VALUES (?, ?, ?, ?)`, [id_usuario, mes, anio, monto_planificado]);
         await conexion.end();
         res.status(201).json({ mensaje: "Presupuesto creado", id_presupuesto: resultado.insertId });
     } catch (error) {
@@ -99,104 +123,68 @@ app.post('/api/mercado/presupuesto', async (req, res) => {
     }
 });
 
-// 4. LA RUTA INTELIGENTE: Recibir la lista de compras y descontar del presupuesto
 app.post('/api/mercado/compras', async (req, res) => {
     const { id_presupuesto, articulos } = req.body;
     let conexion;
-
     try {
         conexion = await conectarBD();
-        
-        // Iniciamos la transacción: O se guarda toda la lista y se actualiza el total, o no se guarda nada.
         await conexion.beginTransaction();
-
         let totalCompra = 0;
-
-        // Recorremos la lista de artículos que envía el teléfono
         for (const articulo of articulos) {
             const { nombre_producto, cantidad, precio_unitario } = articulo;
-            
-            // Sumamos al total de esta factura
             totalCompra += (cantidad * precio_unitario);
-
-            // Guardamos el producto individual
-            await conexion.query(
-                `INSERT INTO Articulos_Mercado (id_presupuesto, nombre_producto, cantidad, precio_unitario, comprado) 
-                 VALUES (?, ?, ?, ?, TRUE)`,
-                [id_presupuesto, nombre_producto, cantidad, precio_unitario]
-            );
+            await conexion.query(`INSERT INTO Articulos_Mercado (id_presupuesto, nombre_producto, cantidad, precio_unitario, comprado) VALUES (?, ?, ?, ?, TRUE)`, [id_presupuesto, nombre_producto, cantidad, precio_unitario]);
         }
-
-        // Magia financiera: Actualizamos el presupuesto maestro sumando el total de esta compra
-        await conexion.query(
-            `UPDATE Presupuestos_Mercado 
-             SET monto_ejecutado = monto_ejecutado + ? 
-             WHERE id_presupuesto = ?`,
-            [totalCompra, id_presupuesto]
-        );
-
-        // Confirmamos y guardamos todo permanentemente
+        await conexion.query(`UPDATE Presupuestos_Mercado SET monto_ejecutado = monto_ejecutado + ? WHERE id_presupuesto = ?`, [totalCompra, id_presupuesto]);
         await conexion.commit();
-
-        res.status(201).json({
-            mensaje: "¡Factura de mercado procesada con éxito!",
-            articulos_registrados: articulos.length,
-            total_gastado_hoy: totalCompra.toFixed(2)
-        });
-
+        res.status(201).json({ mensaje: "Compra procesada", total_gastado_hoy: totalCompra.toFixed(2) });
     } catch (error) {
         if (conexion) await conexion.rollback();
-        console.error("Error al procesar el mercado:", error);
-        res.status(500).json({ error: "Fallo en el servidor al registrar la compra." });
+        res.status(500).json({ error: "Fallo al registrar la compra." });
     } finally {
         if (conexion) await conexion.end();
     }
 });
 
-// 5. RUTA DE LECTURA: Obtener el resumen para el Dashboard
+// ==========================================
+// 5. ACTUALIZADO: DASHBOARD (Lee ambas monedas)
+// ==========================================
 app.get('/api/dashboard/:id_usuario', async (req, res) => {
     const id_usuario = req.params.id_usuario;
-    const mesActual = new Date().getMonth() + 1; // Meses en JS van de 0 a 11
+    const mesActual = new Date().getMonth() + 1; 
     const anioActual = new Date().getFullYear();
     let conexion;
 
     try {
         conexion = await conectarBD();
 
-        // A) Obtener total de Ingresos
+        // Obtener ingresos (USD y Bs)
         const [resIngresos] = await conexion.query(
-            `SELECT SUM(monto) as total_ingresos FROM Ingresos WHERE id_usuario = ?`,
+            `SELECT SUM(monto_usd) as total_usd, SUM(monto_bs) as total_bs FROM Ingresos WHERE id_usuario = ?`,
             [id_usuario]
         );
 
-        // B) Obtener total de Diezmos apartados y "Por Entregar"
+        // Obtener diezmos (USD y Bs)
         const [resDiezmos] = await conexion.query(
-            `SELECT SUM(d.monto_calculado) as diezmos_pendientes 
-             FROM Diezmos d 
-             JOIN Ingresos i ON d.id_ingreso = i.id_ingreso 
+            `SELECT SUM(d.diezmo_usd) as diezmos_usd, SUM(d.diezmo_bs) as diezmos_bs 
+             FROM Diezmos d JOIN Ingresos i ON d.id_ingreso = i.id_ingreso 
              WHERE i.id_usuario = ? AND d.estado = 'Por Entregar'`,
             [id_usuario]
         );
 
-        // C) Obtener estado del Presupuesto de Mercado de este mes
+        // Obtener mercado
         const [resMercado] = await conexion.query(
-            `SELECT monto_planificado, monto_ejecutado 
-             FROM Presupuestos_Mercado 
-             WHERE id_usuario = ? AND mes = ? AND anio = ?`,
+            `SELECT monto_planificado, monto_ejecutado FROM Presupuestos_Mercado WHERE id_usuario = ? AND mes = ? AND anio = ?`,
             [id_usuario, mesActual, anioActual]
         );
 
-        // Armamos un paquete limpio con la información para que Flutter la dibuje
-        const resumen = {
-            ingresos_totales: resIngresos[0].total_ingresos || 0,
-            fondo_ministerial_pendiente: resDiezmos[0].diezmos_pendientes || 0,
-            mercado: resMercado.length > 0 ? resMercado[0] : { mensaje: "Sin presupuesto este mes" }
-        };
-
-        res.status(200).json(resumen);
+        res.status(200).json({
+            ingresos: resIngresos[0],
+            diezmos: resDiezmos[0],
+            mercado: resMercado.length > 0 ? resMercado[0] : null
+        });
 
     } catch (error) {
-        console.error("Error al cargar el dashboard:", error);
         res.status(500).json({ error: "Fallo al obtener los datos." });
     } finally {
         if (conexion) await conexion.end();
