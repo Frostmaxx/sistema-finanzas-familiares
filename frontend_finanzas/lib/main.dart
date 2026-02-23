@@ -166,12 +166,12 @@ class CentralBody extends StatelessWidget {
                     // 2. Quitamos la línea gris que Flutter pone por defecto debajo de las pestañas
                     dividerColor: Colors.transparent, 
                     // 3. Forzamos los colores de los textos
-                    labelColor: Theme.of(context).primaryColor, // Texto activo: Color Principal
-                    unselectedLabelColor: Colors.grey,          // Texto inactivo: Gris
-                    // 4. LA MAGIA: Dibujamos una caja de fondo con opacidad del 10% (0.1)
+                    labelColor: Colors.white, // <--- CAMBIO CLAVE: Texto blanco para que resalte
+                    unselectedLabelColor: Colors.grey,
+                    // 4. Fondo Sólido sin transparencia
                     indicator: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1), // Matiz muy claro
-                      borderRadius: BorderRadius.circular(30), // Bordes redondeados Clean UI
+                      color: Theme.of(context).primaryColor, // <--- SIN el .withOpacity()
+                      borderRadius: BorderRadius.circular(30),
                     ),
                     tabs: const [
                       // Añadimos un poco de padding interno para que la "píldora" respire mejor

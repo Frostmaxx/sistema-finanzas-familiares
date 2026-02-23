@@ -39,7 +39,7 @@ class ThemeProvider extends ChangeNotifier {
         break;
       case AppPalette.azul:
       default:
-        primaryColor = const Color(0xFF2C3E50); // Azul frío
+        primaryColor = const Color(0xFF0B1D39); // Azul frío
         break;
     }
 
