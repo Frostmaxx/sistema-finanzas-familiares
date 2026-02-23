@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 // =====================================================================
 // 1. PUNTO DE ENTRADA Y CONEXIÓN DEL PROVIDER
 // =====================================================================
 void main() {
   runApp(
-    // Envolvemos la app en el Provider para inyectar el motor de temas
     ChangeNotifierProvider(
       create: (context) => ThemeProvider(),
       child: const MyApp(),
@@ -19,25 +19,24 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Escuchamos los cambios del tema
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return MaterialApp(
       title: 'Finanzas Dashboard',
       debugShowCheckedModeBanner: false,
-      theme: themeProvider.themeData, // Aplicamos el tema dinámico
+      theme: themeProvider.themeData,
       home: const MainDashboardLayout(),
     );
   }
 }
 
 // =====================================================================
-// 2. MOTOR DE TEMAS (Idealmente en /providers/theme_provider.dart)
+// 2. MOTOR DE TEMAS
 // =====================================================================
 enum AppPalette { azul, verde, gris }
 
 class ThemeProvider extends ChangeNotifier {
-  AppPalette _currentPalette = AppPalette.azul; // Azul por defecto
+  AppPalette _currentPalette = AppPalette.azul;
 
   AppPalette get currentPalette => _currentPalette;
 
@@ -48,7 +47,6 @@ class ThemeProvider extends ChangeNotifier {
     }
   }
 
-  // Colores de contraste constantes
   final Color contrastOrange = const Color(0xFFFF8C00);
   final Color contrastHoney = const Color(0xFFFFC30B);
   final Color backgroundLight = const Color(0xFFF4F7F6);
@@ -58,14 +56,14 @@ class ThemeProvider extends ChangeNotifier {
 
     switch (_currentPalette) {
       case AppPalette.verde:
-        primaryColor = const Color(0xFF1A4331); // Verde jade oscuro
+        primaryColor = const Color(0xFF1A4331);
         break;
       case AppPalette.gris:
-        primaryColor = const Color(0xFF4A4A4A); // Gris plomo
+        primaryColor = const Color(0xFF4A4A4A);
         break;
       case AppPalette.azul:
       default:
-        primaryColor = const Color(0xFF2C3E50); // Azul frío
+        primaryColor = const Color(0xFF2C3E50);
         break;
     }
 
@@ -76,18 +74,16 @@ class ThemeProvider extends ChangeNotifier {
         primary: primaryColor,
         secondary: contrastOrange,
         tertiary: contrastHoney,
-        background: backgroundLight,
+        surface: backgroundLight,
       ),
-      // Clean UI: Estilos globales para las tarjetas
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30.0),
         ),
       ),
-      // Estilos globales para las pestañas
-      tabBarTheme: TabBarTheme(
+      tabBarTheme: TabBarThemeData(
         labelColor: primaryColor,
         unselectedLabelColor: Colors.grey,
         indicatorColor: contrastOrange,
@@ -97,7 +93,7 @@ class ThemeProvider extends ChangeNotifier {
 }
 
 // =====================================================================
-// 3. ESTRUCTURA RESPONSIVA (Idealmente en /screens/main_layout.dart)
+// 3. ESTRUCTURA RESPONSIVA (Main Layout)
 // =====================================================================
 class MainDashboardLayout extends StatelessWidget {
   const MainDashboardLayout({Key? key}) : super(key: key);
@@ -105,14 +101,12 @@ class MainDashboardLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Menús laterales colapsables para móviles
       drawer: MediaQuery.of(context).size.width < 900 ? const LeftSidebar() : null,
       endDrawer: MediaQuery.of(context).size.width < 1200 ? const RightSidebar() : null,
       
       body: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth >= 1200) {
-            // Layout Windows/Pantallas grandes: 3 Columnas
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
@@ -122,7 +116,6 @@ class MainDashboardLayout extends StatelessWidget {
               ],
             );
           } else if (constraints.maxWidth >= 900) {
-            // Layout Tablets: 2 Columnas (Panel derecho oculto en EndDrawer)
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
@@ -131,7 +124,6 @@ class MainDashboardLayout extends StatelessWidget {
               ],
             );
           } else {
-            // Layout Android/Móviles: 1 Columna (Sidebars ocultos en Drawers)
             return const CentralBody();
           }
         },
@@ -141,7 +133,7 @@ class MainDashboardLayout extends StatelessWidget {
 }
 
 // =====================================================================
-// 4. CUERPO CENTRAL Y PESTAÑAS (Idealmente en /widgets/central_body.dart)
+// 4. CUERPO CENTRAL Y PESTAÑAS
 // =====================================================================
 class CentralBody extends StatelessWidget {
   const CentralBody({Key? key}) : super(key: key);
@@ -156,35 +148,61 @@ class CentralBody extends StatelessWidget {
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            // Header con Pestañas y Botones
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Para móviles, mostramos el botón del Drawer si es necesario
                 if (MediaQuery.of(context).size.width < 900)
                   IconButton(
                     icon: const Icon(Icons.menu),
                     onPressed: () => Scaffold.of(context).openDrawer(),
                   ),
-                const Expanded(
+                
+                // --- INICIO DE LA MODIFICACIÓN DE PESTAÑAS ---
+                Expanded(
                   child: TabBar(
                     isScrollable: true,
-                    indicatorSize: TabBarIndicatorSize.label,
-                    tabs: [
-                      Tab(text: "Finanzas Personales"),
-                      Tab(text: "Finanzas Familiares"),
-                      Tab(text: "Finanzas Ministeriales"),
+                    // 1. Hacemos que el indicador ocupe todo el espacio de la pestaña
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    // 2. Quitamos la línea gris que Flutter pone por defecto debajo de las pestañas
+                    dividerColor: Colors.transparent, 
+                    // 3. Forzamos los colores de los textos
+                    labelColor: Theme.of(context).primaryColor, // Texto activo: Color Principal
+                    unselectedLabelColor: Colors.grey,          // Texto inactivo: Gris
+                    // 4. LA MAGIA: Dibujamos una caja de fondo con opacidad del 10% (0.1)
+                    indicator: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1), // Matiz muy claro
+                      borderRadius: BorderRadius.circular(30), // Bordes redondeados Clean UI
+                    ),
+                    tabs: const [
+                      // Añadimos un poco de padding interno para que la "píldora" respire mejor
+                      Tab(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Text("Finanzas Personales"),
+                        ),
+                      ),
+                      Tab(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Text("Finanzas Familiares"),
+                        ),
+                      ),
+                      Tab(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Text("Finanzas Ministeriales"),
+                        ),
+                      ),
                     ],
                   ),
                 ),
+                // --- FIN DE LA MODIFICACIÓN DE PESTAÑAS ---
                 Row(
                   children: [
-                    // Botón temporal para probar el cambio de temas
                     IconButton(
                       icon: const Icon(Icons.palette),
                       tooltip: "Cambiar Tema",
                       onPressed: () {
-                        // Cambia al siguiente tema cíclicamente
                         final current = themeProvider.currentPalette;
                         final next = current == AppPalette.azul 
                             ? AppPalette.verde 
@@ -203,7 +221,6 @@ class CentralBody extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 24),
-            // Contenido dinámico según la pestaña
             const Expanded(
               child: TabBarView(
                 children: [
@@ -221,49 +238,325 @@ class CentralBody extends StatelessWidget {
 }
 
 // =====================================================================
-// 5. WIDGETS PLACEHOLDERS (Para que el código compile y veas la estructura)
+// 5. SIDEBAR IZQUIERDO (Navegación Principal)
 // =====================================================================
-
 class LeftSidebar extends StatelessWidget {
   const LeftSidebar({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
+      // Usamos fondo blanco puro para que contraste suavemente con el matiz medio del fondo general
       color: Colors.white,
-      child: Center(
-        child: Text("Left Sidebar\n(Menú)", textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).primaryColor)),
+      padding: const EdgeInsets.symmetric(vertical: 32.0, horizontal: 20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1. LOGO Y NOMBRE DE LA APP
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: theme.primaryColor,
+                radius: 18,
+                child: const Icon(Icons.bubble_chart, color: Colors.white, size: 20), // Icono circular
+              ),
+              const SizedBox(width: 12),
+              Text(
+                "Sphix", // Puedes cambiarlo por el nombre de tu app
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: theme.primaryColor,
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 50),
+
+          // 2. LISTA DE NAVEGACIÓN
+          // En un escenario real, 'isActive' cambiaría dinámicamente según la ruta actual
+          _buildNavItem(context, "Dashboard", Icons.dashboard, isActive: true),
+          _buildNavItem(context, "Ingresos", Icons.arrow_downward, isActive: false),
+          _buildNavItem(context, "Gastos", Icons.arrow_upward, isActive: false),
+          _buildNavItem(context, "Deudas y Créditos", Icons.credit_card, isActive: false),
+          _buildNavItem(context, "Ahorros", Icons.savings, isActive: false),
+          _buildNavItem(context, "Metas Financieras", Icons.flag, isActive: false),
+
+          // Empuja el siguiente contenido hacia el fondo de la pantalla
+          const Spacer(),
+
+          // 3. OPCIONES INFERIORES (Opcional, muy común en dashboards)
+          _buildNavItem(context, "Configuración", Icons.settings, isActive: false),
+          _buildNavItem(context, "Cerrar Sesión", Icons.logout, isActive: false),
+        ],
       ),
     );
   }
-}
 
-class RightSidebar extends StatelessWidget {
-  const RightSidebar({Key? key}) : super(key: key);
-  @override
-  Widget build(BuildContext context) {
+  // Método auxiliar para construir cada botón del menú
+  Widget _buildNavItem(BuildContext context, String title, IconData icon, {required bool isActive}) {
+    final theme = Theme.of(context);
+    
     return Container(
-      color: Colors.white,
-      child: Center(
-        child: Text("Right Sidebar\n(Cuentas/Gráficos)", textAlign: TextAlign.center, style: TextStyle(color: Theme.of(context).primaryColor)),
+      margin: const EdgeInsets.only(bottom: 8), // Separación entre botones
+      decoration: BoxDecoration(
+        // Si está activo, usa el color principal. Si no, es transparente.
+        color: isActive ? theme.primaryColor : Colors.transparent,
+        // Bordes redondeados consistentes con tu Clean UI
+        borderRadius: BorderRadius.circular(16),
       ),
-    );
-  }
-}
-
-class DashboardGrid extends StatelessWidget {
-  final String contextoFinanciero;
-  const DashboardGrid({Key? key, required this.contextoFinanciero}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text("Contenido de:\n$contextoFinanciero", textAlign: TextAlign.center, style: const TextStyle(fontSize: 20)),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            // Aquí iría tu lógica de navegación (ej. Navigator.pushNamed...)
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  // Contraste: Icono blanco si está activo, gris si no
+                  color: isActive ? Colors.white : Colors.grey.shade600,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      // Texto blanco y en negrita si está activo, gris regular si no
+                      color: isActive ? Colors.white : Colors.grey.shade600,
+                      fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
 
 // =====================================================================
-// 4.1. EL GRID DEL DASHBOARD (Reemplaza el DashboardGrid anterior)
+// PANEL DERECHO (Mis Cuentas, Ingresos, Gráfico de Dona)
+// =====================================================================
+class RightSidebar extends StatelessWidget {
+  const RightSidebar({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      // Le damos un fondo blanco puro para separarlo del cuerpo central
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. SECCIÓN: MIS CUENTAS (Avatares horizontales)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Mis cuentas", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.primaryColor)),
+                const Icon(Icons.more_horiz, color: Colors.grey),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildAccountAvatar("Banesco", "\$ 1.2k", Icons.account_balance, theme.primaryColor),
+                  const SizedBox(width: 16),
+                  _buildAccountAvatar("Zelle", "\$ 850", Icons.attach_money, colorScheme.secondary),
+                  const SizedBox(width: 16),
+                  _buildAccountAvatar("Mercantil", "\$ 4.3k", Icons.account_balance_wallet, colorScheme.tertiary),
+                  const SizedBox(width: 16),
+                  // Botón para agregar nueva cuenta
+                  Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: theme.scaffoldBackgroundColor,
+                        child: Icon(Icons.add, color: theme.primaryColor),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text("Agregar", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 40),
+
+            // 2. SECCIÓN: INGRESOS (ListView de registros)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Ingresos Recientes", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.primaryColor)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // ListView.builder para la lista de ingresos
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: 3, // Mostramos 3 registros de ejemplo
+              itemBuilder: (context, index) {
+                // Datos simulados
+                final descripciones = ["Venta de Diseño", "Asesoría Logística", "Ofrenda / Donación"];
+                final montos = ["+\$ 450.00", "+\$ 320.00", "+\$ 100.00"];
+                final fechas = ["Hoy, 10:30 AM", "Ayer, 04:15 PM", "12 Ago, 09:00 AM"];
+                
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: theme.scaffoldBackgroundColor, borderRadius: BorderRadius.circular(12)),
+                        child: Icon(Icons.arrow_downward, color: Colors.green, size: 16),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(descripciones[index], style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryColor, fontSize: 14)),
+                            Text(fechas[index], style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                      Text(montos[index], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 14)),
+                    ],
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 40),
+
+            // 3. SECCIÓN: GRÁFICO DE INGRESOS (Dona / PieChart)
+            Text("Distribución de Ingresos", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.primaryColor)),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 200, // Altura fija para el gráfico
+              child: Stack(
+                children: [
+                  PieChart(
+                    PieChartData(
+                      sectionsSpace: 4, // Espacio en blanco entre las rebanadas
+                      centerSpaceRadius: 60, // Esto convierte el PieChart en una Dona
+                      startDegreeOffset: -90,
+                      sections: [
+                        PieChartSectionData(
+                          color: theme.primaryColor,
+                          value: 55,
+                          title: '', // Lo dejamos en blanco para un look más "Clean"
+                          radius: 25,
+                        ),
+                        PieChartSectionData(
+                          color: colorScheme.secondary,
+                          value: 30,
+                          title: '',
+                          radius: 25,
+                        ),
+                        PieChartSectionData(
+                          color: colorScheme.tertiary,
+                          value: 15,
+                          title: '',
+                          radius: 25,
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Texto en el centro de la Dona
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text("Total", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        Text("\$ 870", style: TextStyle(color: theme.primaryColor, fontSize: 24, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  )
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Leyenda del gráfico
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildLegendItem("Servicios", theme.primaryColor),
+                _buildLegendItem("Productos", colorScheme.secondary),
+                _buildLegendItem("Otros", colorScheme.tertiary),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Widget auxiliar para los avatares de cuentas
+  Widget _buildAccountAvatar(String name, String balance, IconData icon, Color color) {
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.topRight,
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: color.withOpacity(0.1),
+              child: Icon(icon, color: color),
+            ),
+            // Puntito verde simulando que la cuenta está conectada/activa
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: Colors.green,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+            )
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        Text(balance, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+      ],
+    );
+  }
+
+  // Widget auxiliar para la leyenda del gráfico
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      children: [
+        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 6),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
+    );
+  }
+}
+
+// =====================================================================
+// 6. EL GRID DEL DASHBOARD
 // =====================================================================
 class DashboardGrid extends StatelessWidget {
   final String contextoFinanciero;
@@ -272,7 +565,6 @@ class DashboardGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Obtenemos los colores dinámicos de nuestro motor de temas
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -280,14 +572,9 @@ class DashboardGrid extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Título y Estadísticas Rápidas
           Text(
             contextoFinanciero,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: theme.primaryColor,
-            ),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: theme.primaryColor),
           ),
           const SizedBox(height: 16),
           Row(
@@ -298,82 +585,54 @@ class DashboardGrid extends StatelessWidget {
               _buildQuickStat("Ahorros", "\$ 5,500", "+ 12.3%", true, theme),
             ],
           ),
-          
           const SizedBox(height: 32),
-
-          // 2. Tarjetas Grandes de Categoría (Ingresos y Gastos)
           Row(
             children: [
-              // Tarjeta de Ingresos (Color Principal)
               Expanded(
                 child: CategoryCard(
                   title: "Ingresos",
                   amount: "\$ 21,550",
                   percentage: "↑ 52.5%",
                   icon: Icons.account_balance_wallet,
-                  // Gradiente usando el color principal y un tono un poco más claro
-                  gradientColors: [
-                    colorScheme.primary,
-                    colorScheme.primary.withOpacity(0.7),
-                  ],
-                  // Datos de prueba para la gráfica
+                  gradientColors: [colorScheme.primary, colorScheme.primary.withOpacity(0.7)],
                   sparklineData: const [10, 20, 15, 30, 25, 40, 35, 50],
                 ),
               ),
-              const SizedBox(width: 20), // Espaciado entre tarjetas
-              
-              // Tarjeta de Gastos (Color de Contraste - Naranja)
+              const SizedBox(width: 20),
               Expanded(
                 child: CategoryCard(
                   title: "Gastos",
                   amount: "\$ 4,320",
                   percentage: "↓ 12.5%",
                   icon: Icons.shopping_bag,
-                  // Gradiente usando el color secundario (Naranja)
-                  gradientColors: [
-                    colorScheme.secondary,
-                    colorScheme.secondary.withOpacity(0.7),
-                  ],
+                  gradientColors: [colorScheme.secondary, colorScheme.secondary.withOpacity(0.7)],
                   sparklineData: const [50, 40, 45, 30, 35, 20, 25, 10],
                 ),
               ),
-
-              // --- INICIO DE LA INSERCIÓN DEL PINPOINT 1 ---
+            ],
+          ),
           const SizedBox(height: 32),
-
-          // 3. Fila de Micro-Widgets
+          
+          // Eliminé el "const" problemático de esta lista
           Row(
             children: const [
               Expanded(child: DeudasWidget()),
-              const SizedBox(width: 20),
+              SizedBox(width: 20),
               Expanded(child: AnalysisWidget()),
-              const SizedBox(width: 20),
+              SizedBox(width: 20),
               Expanded(child: SaldosWidget()),
             ],
           ),
-
-          // --- INICIO DE LA INSERCIÓN DEL PINPOINT 1 ---
           const SizedBox(height: 32),
-          
-          Text(
-            "Reciente",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: theme.primaryColor,
-            ),
-          ),
+          Text("Reciente", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.primaryColor)),
           const SizedBox(height: 16),
-          
-          // 4. Grid 2x2 de Transacciones Recientes
           const RecienteGridWidget(),
-          // --- FIN DE LA INSERCIÓN DEL PINPOINT 1 ---
-        ], // <--- ESTE ES EL CORCHETE QUE CIERRA EL COLUMN PRINCIPAL DEL DASHBOARDGRID
+          const SizedBox(height: 32),
+        ],
       ),
     );
   }
-         
-  // Widget auxiliar para las estadísticas rápidas (texto limpio)
+
   Widget _buildQuickStat(String label, String value, String percentage, bool isPositive, ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,14 +644,7 @@ class DashboardGrid extends StatelessWidget {
           children: [
             Text(value, style: TextStyle(color: theme.primaryColor, fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(width: 8),
-            Text(
-              percentage,
-              style: TextStyle(
-                color: isPositive ? Colors.green : Colors.redAccent,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            Text(percentage, style: TextStyle(color: isPositive ? Colors.green : Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold)),
           ],
         )
       ],
@@ -401,24 +653,17 @@ class DashboardGrid extends StatelessWidget {
 }
 
 // =====================================================================
-// 4.2. TARJETA DE CATEGORÍA CON GRADIENTE
+// 7. COMPONENTES VISUALES Y GRÁFICOS
 // =====================================================================
 class CategoryCard extends StatelessWidget {
-  final String title;
-  final String amount;
-  final String percentage;
+  final String title, amount, percentage;
   final IconData icon;
   final List<Color> gradientColors;
   final List<double> sparklineData;
 
   const CategoryCard({
-    Key? key,
-    required this.title,
-    required this.amount,
-    required this.percentage,
-    required this.icon,
-    required this.gradientColors,
-    required this.sparklineData,
+    Key? key, required this.title, required this.amount, required this.percentage,
+    required this.icon, required this.gradientColors, required this.sparklineData,
   }) : super(key: key);
 
   @override
@@ -426,25 +671,13 @@ class CategoryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        // Aplicamos el BorderRadius general de 30px que definiste
         borderRadius: BorderRadius.circular(30),
-        gradient: LinearGradient(
-          colors: gradientColors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: gradientColors.first.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        gradient: LinearGradient(colors: gradientColors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+        boxShadow: [BoxShadow(color: gradientColors.first.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icono y Título
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -452,10 +685,7 @@ class CategoryCard extends StatelessWidget {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
                     child: Icon(icon, color: Colors.white, size: 20),
                   ),
                   const SizedBox(width: 12),
@@ -466,8 +696,6 @@ class CategoryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 30),
-          
-          // Valor Principal y Gráfica
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -488,12 +716,7 @@ class CategoryCard extends StatelessWidget {
                   ),
                 ],
               ),
-              // Aquí inyectamos nuestra mini gráfica (Sparkline)
-              SizedBox(
-                width: 80,
-                height: 40,
-                child: SparklineWidget(data: sparklineData, color: Colors.white),
-              )
+              SizedBox(width: 80, height: 40, child: SparklineWidget(data: sparklineData, color: Colors.white))
             ],
           ),
         ],
@@ -502,81 +725,90 @@ class CategoryCard extends StatelessWidget {
   }
 }
 
-// =====================================================================
-// 4.3. SPARKLINE PERSONALIZADO (Gráfica de línea sin librerías)
-// =====================================================================
 class SparklineWidget extends StatelessWidget {
   final List<double> data;
   final Color color;
-
   const SparklineWidget({Key? key, required this.data, required this.color}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _SparklinePainter(data, color),
-    );
+    return CustomPaint(painter: _SparklinePainter(data, color));
   }
 }
 
 class _SparklinePainter extends CustomPainter {
   final List<double> data;
   final Color color;
-
   _SparklinePainter(this.data, this.color);
 
   @override
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
-
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
+    final paint = Paint()..color = color..strokeWidth = 2.5..style = PaintingStyle.stroke..strokeCap = StrokeCap.round;
     final maxVal = data.reduce((a, b) => a > b ? a : b);
     final minVal = data.reduce((a, b) => a < b ? a : b);
     final range = maxVal - minVal == 0 ? 1 : maxVal - minVal;
-
     final path = Path();
     final stepX = size.width / (data.length - 1);
 
     for (int i = 0; i < data.length; i++) {
-      // Normalizamos el valor Y para que encaje en el alto del Canvas
       final normalizedY = size.height - ((data[i] - minVal) / range) * size.height;
       final x = i * stepX;
-
       if (i == 0) {
         path.moveTo(x, normalizedY);
       } else {
-        // Usamos una curva cúbica suave (Bezier) para que no se vea poligonal
         final previousX = (i - 1) * stepX;
         final previousY = size.height - ((data[i - 1] - minVal) / range) * size.height;
-        
         final controlPointX = previousX + (x - previousX) / 2;
         path.cubicTo(controlPointX, previousY, controlPointX, normalizedY, x, normalizedY);
       }
     }
-
     canvas.drawPath(path, paint);
   }
-
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // =====================================================================
-// 5. MICRO-WIDGETS
+// 8. MICRO-WIDGETS Y RECIENTES
 // =====================================================================
 
-class DeudasWidget extends StatelessWidget {
-  const DeudasWidget({Key? key}) : super(key: key);
+// WIDGET EXTRAÍDO PARA EVITAR EL ERROR DE SCOPE
+class MiniToggle extends StatelessWidget {
+  final String active;
+  final String inactive;
+
+  const MiniToggle({Key? key, required this.active, required this.inactive}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(color: theme.scaffoldBackgroundColor, borderRadius: BorderRadius.circular(20)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(color: theme.primaryColor, borderRadius: BorderRadius.circular(16)),
+            child: Text(active, style: const TextStyle(color: Colors.white, fontSize: 10)),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            child: Text(inactive, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DeudasWidget extends StatelessWidget {
+  const DeudasWidget({Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -587,7 +819,7 @@ class DeudasWidget extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text("Deudas", style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryColor)),
-                _buildMiniToggle(context, "Deudas", "Créditos"),
+                const MiniToggle(active: "Deudas", inactive: "Créditos"),
               ],
             ),
             const SizedBox(height: 24),
@@ -606,17 +838,11 @@ class DeudasWidget extends StatelessWidget {
                   ],
                 ),
                 SizedBox(
-                  width: 50,
-                  height: 50,
+                  width: 50, height: 50,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      CircularProgressIndicator(
-                        value: 0.25,
-                        strokeWidth: 6,
-                        backgroundColor: theme.scaffoldBackgroundColor,
-                        color: theme.primaryColor,
-                      ),
+                      CircularProgressIndicator(value: 0.25, strokeWidth: 6, backgroundColor: theme.scaffoldBackgroundColor, color: theme.primaryColor),
                       Center(child: Text("25%", style: TextStyle(fontSize: 10, color: theme.primaryColor))),
                     ],
                   ),
@@ -632,12 +858,9 @@ class DeudasWidget extends StatelessWidget {
 
 class AnalysisWidget extends StatelessWidget {
   const AnalysisWidget({Key? key}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -652,9 +875,9 @@ class AnalysisWidget extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _buildBar(40, colorScheme.secondary),
+                  _buildBar(40, theme.colorScheme.secondary),
                   _buildBar(60, theme.primaryColor),
-                  _buildBar(35, colorScheme.tertiary),
+                  _buildBar(35, theme.colorScheme.tertiary),
                   _buildBar(50, theme.primaryColor.withOpacity(0.5)),
                 ],
               ),
@@ -674,26 +897,16 @@ class AnalysisWidget extends StatelessWidget {
       ),
     );
   }
-
   Widget _buildBar(double height, Color color) {
-    return Container(
-      width: 16,
-      height: height,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(8),
-      ),
-    );
+    return Container(width: 16, height: height, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)));
   }
 }
 
 class SaldosWidget extends StatelessWidget {
   const SaldosWidget({Key? key}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -704,7 +917,7 @@ class SaldosWidget extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text("Saldos", style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryColor)),
-                _buildMiniToggle(context, "Cuentas", "Efectivo"),
+                const MiniToggle(active: "Cuentas", inactive: "Efectivo"),
               ],
             ),
             const SizedBox(height: 24),
@@ -720,58 +933,30 @@ class SaldosWidget extends StatelessWidget {
   }
 }
 
-Widget _buildMiniToggle(BuildContext context, String active, String inactive) {
-  final theme = Theme.of(context);
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-    decoration: BoxDecoration(
-      color: theme.scaffoldBackgroundColor,
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: theme.primaryColor,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Text(active, style: const TextStyle(color: Colors.white, fontSize: 10)),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          child: Text(inactive, style: const TextStyle(color: Colors.grey, fontSize: 10)),
-        ),
-      ],
-    ),
-  );
-}
-
-// --- INICIO DE LA INSERCIÓN DEL PINPOINT 2 ---
-
 // =====================================================================
-// 6. SECCIÓN RECIENTE (Grid 2x2)
+// SECCIÓN RECIENTE (Grid 2x2 - Estilo Líneas Gruesas / List Tile)
 // =====================================================================
 
 class RecienteGridWidget extends StatelessWidget {
   const RecienteGridWidget({Key? key}) : super(key: key);
-
+  
   @override
   Widget build(BuildContext context) {
-    // LayoutBuilder nos permite saber el ancho disponible en tiempo real
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Si la pantalla es menor a 600px (móvil), usamos 1 columna. Si es mayor, 2 columnas.
         int crossAxisCount = constraints.maxWidth < 600 ? 1 : 2;
         
-        return GridView.count(
-          crossAxisCount: crossAxisCount,
-          shrinkWrap: true, // Vital para que funcione dentro de un SingleChildScrollView
-          physics: const NeverScrollableScrollPhysics(), // Desactiva el scroll interno del grid
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: constraints.maxWidth < 600 ? 4 : 3, // Ajusta la proporción ancho/alto
+        // Cambiamos GridView.count por un GridView con delegado
+        // Esto nos permite usar "mainAxisExtent" para fijar la altura
+        return GridView(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 12, // Espacio vertical entre líneas
+            crossAxisSpacing: 16, // Espacio horizontal entre columnas
+            mainAxisExtent: 70, // ¡LA MAGIA AQUÍ! Forzamos la altura a 70px exactos
+          ),
           children: const [
             RecienteItemCard(titulo: "Pago de Luz", monto: "-\$ 45.00", isIngreso: false, icono: Icons.electric_bolt),
             RecienteItemCard(titulo: "Ahorro Vehículo", monto: "+\$ 150.00", isIngreso: true, icono: Icons.directions_car),
@@ -785,67 +970,54 @@ class RecienteGridWidget extends StatelessWidget {
 }
 
 class RecienteItemCard extends StatelessWidget {
-  final String titulo;
-  final String monto;
+  final String titulo, monto;
   final bool isIngreso;
   final IconData icono;
-
-  const RecienteItemCard({
-    Key? key, 
-    required this.titulo, 
-    required this.monto, 
-    required this.isIngreso, 
-    required this.icono
-  }) : super(key: key);
+  
+  const RecienteItemCard({Key? key, required this.titulo, required this.monto, required this.isIngreso, required this.icono}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
     return Card(
+      // Reducimos el padding vertical para que encaje perfecto en la "línea gruesa"
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         child: Row(
           children: [
-            // Círculo con el icono
+            // Círculo del icono ligeramente más pequeño
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                // Usamos colores suaves de fondo para mantener el estilo "Clean"
-                color: isIngreso ? Colors.green.withOpacity(0.1) : Colors.redAccent.withOpacity(0.1),
-                shape: BoxShape.circle,
+                color: isIngreso ? Colors.green.withOpacity(0.1) : Colors.redAccent.withOpacity(0.1), 
+                shape: BoxShape.circle
               ),
-              child: Icon(icono, color: isIngreso ? Colors.green : Colors.redAccent, size: 24),
+              child: Icon(icono, color: isIngreso ? Colors.green : Colors.redAccent, size: 20),
             ),
             const SizedBox(width: 16),
-            // Textos descriptivos
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center, // Centrado vertical perfecto
                 children: [
                   Text(
                     titulo, 
-                    style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryColor, fontSize: 16),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis, // Corta el texto largo con "..."
+                    // Letra un poco más estilizada para la línea
+                    style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryColor, fontSize: 14), 
+                    maxLines: 1, 
+                    overflow: TextOverflow.ellipsis
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     isIngreso ? "Ahorro / Ingreso" : "Gasto / Pago", 
-                    style: const TextStyle(color: Colors.grey, fontSize: 12)
+                    style: const TextStyle(color: Colors.grey, fontSize: 11)
                   ),
                 ],
               ),
             ),
-            // Monto
             Text(
               monto, 
-              style: TextStyle(
-                fontWeight: FontWeight.bold, 
-                fontSize: 16, 
-                color: isIngreso ? Colors.green : theme.primaryColor
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isIngreso ? Colors.green : theme.primaryColor)
             ),
           ],
         ),
@@ -853,4 +1025,3 @@ class RecienteItemCard extends StatelessWidget {
     );
   }
 }
-// --- FIN DE LA INSERCIÓN DEL PINPOINT 2 ---
