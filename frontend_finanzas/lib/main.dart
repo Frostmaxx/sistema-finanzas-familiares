@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'theme_provider.dart'; // Tu motor de temas externo
 
-// =====================================================================
-// 1. PUNTO DE ENTRADA Y CONEXIÓN DEL PROVIDER
-// =====================================================================
 void main() {
   runApp(
     ChangeNotifierProvider(
@@ -31,69 +29,7 @@ class MyApp extends StatelessWidget {
 }
 
 // =====================================================================
-// 2. MOTOR DE TEMAS
-// =====================================================================
-enum AppPalette { azul, verde, gris }
-
-class ThemeProvider extends ChangeNotifier {
-  AppPalette _currentPalette = AppPalette.azul;
-
-  AppPalette get currentPalette => _currentPalette;
-
-  void changePalette(AppPalette newPalette) {
-    if (_currentPalette != newPalette) {
-      _currentPalette = newPalette;
-      notifyListeners();
-    }
-  }
-
-  final Color contrastOrange = const Color(0xFFFF8C00);
-  final Color contrastHoney = const Color(0xFFFFC30B);
-  final Color backgroundLight = const Color(0xFFF4F7F6);
-
-  ThemeData get themeData {
-    Color primaryColor;
-
-    switch (_currentPalette) {
-      case AppPalette.verde:
-        primaryColor = const Color(0xFF1A4331);
-        break;
-      case AppPalette.gris:
-        primaryColor = const Color(0xFF4A4A4A);
-        break;
-      case AppPalette.azul:
-      default:
-        primaryColor = const Color(0xFF2C3E50);
-        break;
-    }
-
-    return ThemeData(
-      primaryColor: primaryColor,
-      scaffoldBackgroundColor: backgroundLight,
-      colorScheme: ColorScheme.light(
-        primary: primaryColor,
-        secondary: contrastOrange,
-        tertiary: contrastHoney,
-        surface: backgroundLight,
-      ),
-      cardTheme: CardThemeData(
-        color: Colors.white,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30.0),
-        ),
-      ),
-      tabBarTheme: TabBarThemeData(
-        labelColor: primaryColor,
-        unselectedLabelColor: Colors.grey,
-        indicatorColor: contrastOrange,
-      ),
-    );
-  }
-}
-
-// =====================================================================
-// 3. ESTRUCTURA RESPONSIVA (Main Layout)
+// MAIN LAYOUT
 // =====================================================================
 class MainDashboardLayout extends StatelessWidget {
   const MainDashboardLayout({Key? key}) : super(key: key);
@@ -133,7 +69,7 @@ class MainDashboardLayout extends StatelessWidget {
 }
 
 // =====================================================================
-// 4. CUERPO CENTRAL Y PESTAÑAS
+// CENTRAL BODY
 // =====================================================================
 class CentralBody extends StatelessWidget {
   const CentralBody({Key? key}) : super(key: key);
@@ -144,101 +80,87 @@ class CentralBody extends StatelessWidget {
 
     return DefaultTabController(
       length: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      // EL CAMBIO ESTÁ AQUÍ: Envolvemos en un Builder para que las Sidebars 
+      // puedan "escuchar" el cambio de pestaña en tiempo real.
+      child: Builder(
+        builder: (context) {
+          return Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
               children: [
-                if (MediaQuery.of(context).size.width < 900)
-                  IconButton(
-                    icon: const Icon(Icons.menu),
-                    onPressed: () => Scaffold.of(context).openDrawer(),
-                  ),
-                
-                // --- INICIO DE LA MODIFICACIÓN DE PESTAÑAS ---
-                Expanded(
-                  child: TabBar(
-                    isScrollable: true,
-                    // 1. Hacemos que el indicador ocupe todo el espacio de la pestaña
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    // 2. Quitamos la línea gris que Flutter pone por defecto debajo de las pestañas
-                    dividerColor: Colors.transparent, 
-                    // 3. Forzamos los colores de los textos
-                    labelColor: Colors.white, // <--- CAMBIO CLAVE: Texto blanco para que resalte
-                    unselectedLabelColor: Colors.grey,
-                    // 4. Fondo Sólido sin transparencia
-                    indicator: BoxDecoration(
-                      color: Theme.of(context).primaryColor, // <--- SIN el .withOpacity()
-                      borderRadius: BorderRadius.circular(30),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (MediaQuery.of(context).size.width < 900)
+                      IconButton(
+                        icon: const Icon(Icons.menu),
+                        onPressed: () => Scaffold.of(context).openDrawer(),
+                      ),
+                    Expanded(
+                      child: TabBar(
+                        isScrollable: true,
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        dividerColor: Colors.transparent, 
+                        labelColor: Colors.white,
+                        unselectedLabelColor: Colors.grey,
+                        indicator: BoxDecoration(
+                          color: Theme.of(context).primaryColor,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        // Agregamos un onTap para forzar la reconstrucción de las Sidebars
+                        onTap: (index) {
+                          (context as Element).markNeedsBuild();
+                        },
+                        tabs: const [
+                          Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text("Finanzas Personales"))),
+                          Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text("Finanzas Familiares"))),
+                          Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text("Finanzas Ministeriales"))),
+                        ],
+                      ),
                     ),
-                    tabs: const [
-                      // Añadimos un poco de padding interno para que la "píldora" respire mejor
-                      Tab(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Text("Finanzas Personales"),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.palette),
+                          tooltip: "Cambiar Tema",
+                          onPressed: () {
+                            final current = themeProvider.currentPalette;
+                            final next = current == AppPalette.azul 
+                                ? AppPalette.verde 
+                                : (current == AppPalette.verde ? AppPalette.gris : AppPalette.azul);
+                            themeProvider.changePalette(next);
+                          },
                         ),
-                      ),
-                      Tab(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Text("Finanzas Familiares"),
-                        ),
-                      ),
-                      Tab(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Text("Finanzas Ministeriales"),
-                        ),
-                      ),
+                        IconButton(icon: const Icon(Icons.notifications), onPressed: () {}),
+                        if (MediaQuery.of(context).size.width < 1200)
+                          IconButton(
+                            icon: const Icon(Icons.account_balance_wallet),
+                            onPressed: () => Scaffold.of(context).openEndDrawer(),
+                          ),
+                      ],
+                    )
+                  ],
+                ),
+                const SizedBox(height: 24),
+                const Expanded(
+                  child: TabBarView(
+                    children: [
+                      DashboardGrid(contextoFinanciero: "Finanzas Personales"),
+                      DashboardGrid(contextoFinanciero: "Finanzas Familiares"),
+                      DashboardGrid(contextoFinanciero: "Finanzas Ministeriales"),
                     ],
                   ),
                 ),
-                // --- FIN DE LA MODIFICACIÓN DE PESTAÑAS ---
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.palette),
-                      tooltip: "Cambiar Tema",
-                      onPressed: () {
-                        final current = themeProvider.currentPalette;
-                        final next = current == AppPalette.azul 
-                            ? AppPalette.verde 
-                            : (current == AppPalette.verde ? AppPalette.gris : AppPalette.azul);
-                        themeProvider.changePalette(next);
-                      },
-                    ),
-                    IconButton(icon: const Icon(Icons.notifications), onPressed: () {}),
-                    if (MediaQuery.of(context).size.width < 1200)
-                      IconButton(
-                        icon: const Icon(Icons.account_balance_wallet),
-                        onPressed: () => Scaffold.of(context).openEndDrawer(),
-                      ),
-                  ],
-                )
               ],
             ),
-            const SizedBox(height: 24),
-            const Expanded(
-              child: TabBarView(
-                children: [
-                  DashboardGrid(contextoFinanciero: "Finanzas Personales"),
-                  DashboardGrid(contextoFinanciero: "Finanzas Familiares"),
-                  DashboardGrid(contextoFinanciero: "Finanzas Ministeriales"),
-                ],
-              ),
-            ),
-          ],
-        ),
+          );
+        }
       ),
     );
   }
-}
 
 // =====================================================================
-// 5. SIDEBAR IZQUIERDO (Navegación Principal)
+// SIDEBAR IZQUIERDO (Left Sidebar)
 // =====================================================================
 class LeftSidebar extends StatelessWidget {
   const LeftSidebar({Key? key}) : super(key: key);
@@ -246,49 +168,45 @@ class LeftSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Detectamos la pestaña activa a través del DefaultTabController
+    final tabController = DefaultTabController.of(context);
+    // Si la pestaña es la 2 (Finanzas Ministeriales), cambiamos el menú
+    final bool esMinisterial = tabController.index == 2;
 
     return Container(
-      // Usamos fondo blanco puro para que contraste suavemente con el matiz medio del fondo general
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 32.0, horizontal: 20.0),
+      padding: const EdgeInsets.fromLTRB(24.0, 32.0, 16.0, 32.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. LOGO Y NOMBRE DE LA APP
           Row(
             children: [
               CircleAvatar(
                 backgroundColor: theme.primaryColor,
                 radius: 18,
-                child: const Icon(Icons.bubble_chart, color: Colors.white, size: 20), // Icono circular
+                child: const Icon(Icons.bubble_chart, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
-              Text(
-                "Sphix", // Puedes cambiarlo por el nombre de tu app
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: theme.primaryColor,
-                ),
-              ),
+              Text("Sphix", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: theme.primaryColor)),
             ],
           ),
-          
           const SizedBox(height: 50),
+          
+          // ITEMS DINÁMICOS
+          if (esMinisterial) ...[
+            _buildNavItem(context, "Resumen Ministerial", Icons.dashboard, isActive: true),
+            _buildNavItem(context, "Diezmos y Ofrendas", Icons.auto_awesome, isActive: false),
+            _buildNavItem(context, "Pactos", Icons.handshake, isActive: false),
+            _buildNavItem(context, "Metas Financieras", Icons.flag, isActive: false),
+          ] else ...[
+            _buildNavItem(context, "Dashboard", Icons.dashboard, isActive: true),
+            _buildNavItem(context, "Ingresos", Icons.arrow_downward, isActive: false),
+            _buildNavItem(context, "Gastos", Icons.arrow_upward, isActive: false),
+            _buildNavItem(context, "Deudas y Créditos", Icons.credit_card, isActive: false),
+            _buildNavItem(context, "Ahorros", Icons.savings, isActive: false),
+            _buildNavItem(context, "Metas Financieras", Icons.flag, isActive: false),
+          ],
 
-          // 2. LISTA DE NAVEGACIÓN
-          // En un escenario real, 'isActive' cambiaría dinámicamente según la ruta actual
-          _buildNavItem(context, "Dashboard", Icons.dashboard, isActive: true),
-          _buildNavItem(context, "Ingresos", Icons.arrow_downward, isActive: false),
-          _buildNavItem(context, "Gastos", Icons.arrow_upward, isActive: false),
-          _buildNavItem(context, "Deudas y Créditos", Icons.credit_card, isActive: false),
-          _buildNavItem(context, "Ahorros", Icons.savings, isActive: false),
-          _buildNavItem(context, "Metas Financieras", Icons.flag, isActive: false),
-
-          // Empuja el siguiente contenido hacia el fondo de la pantalla
           const Spacer(),
-
-          // 3. OPCIONES INFERIORES (Opcional, muy común en dashboards)
           _buildNavItem(context, "Configuración", Icons.settings, isActive: false),
           _buildNavItem(context, "Cerrar Sesión", Icons.logout, isActive: false),
         ],
@@ -296,41 +214,29 @@ class LeftSidebar extends StatelessWidget {
     );
   }
 
-  // Método auxiliar para construir cada botón del menú
   Widget _buildNavItem(BuildContext context, String title, IconData icon, {required bool isActive}) {
     final theme = Theme.of(context);
-    
     return Container(
-      margin: const EdgeInsets.only(bottom: 8), // Separación entre botones
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        // Si está activo, usa el color principal. Si no, es transparente.
         color: isActive ? theme.primaryColor : Colors.transparent,
-        // Bordes redondeados consistentes con tu Clean UI
         borderRadius: BorderRadius.circular(16),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            // Aquí iría tu lógica de navegación (ej. Navigator.pushNamed...)
-          },
+          onTap: () {},
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
             child: Row(
               children: [
-                Icon(
-                  icon,
-                  size: 20,
-                  // Contraste: Icono blanco si está activo, gris si no
-                  color: isActive ? Colors.white : Colors.grey.shade600,
-                ),
+                Icon(icon, size: 20, color: isActive ? Colors.white : Colors.grey.shade600),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
                     title,
                     style: TextStyle(
-                      // Texto blanco y en negrita si está activo, gris regular si no
                       color: isActive ? Colors.white : Colors.grey.shade600,
                       fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                       fontSize: 14,
@@ -347,25 +253,56 @@ class LeftSidebar extends StatelessWidget {
 }
 
 // =====================================================================
-// PANEL DERECHO (Mis Cuentas, Ingresos, Gráfico de Dona)
+// PANEL DERECHO (Right Sidebar)
 // =====================================================================
 class RightSidebar extends StatelessWidget {
   const RightSidebar({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final tabController = DefaultTabController.of(context);
+    final bool esMinisterial = tabController.index == 2;
 
     return Container(
-      // Le damos un fondo blanco puro para separarlo del cuerpo central
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+      padding: const EdgeInsets.fromLTRB(0, 24.0, 24.0, 24.0),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. SECCIÓN: MIS CUENTAS (Avatares horizontales)
+            if (esMinisterial) ...[
+              // EN ORDEN MINISTERIAL:
+              const DiezmosEntregadosWidget(), // El antiguo "Ingresos Recientes" ahora arriba
+              const SizedBox(height: 24),
+              const DistribucionIngresosWidget(), // Gráfico de Ofrendas, Diezmos y Pactos
+            ] else ...[
+              // ORDEN ESTÁNDAR:
+              const MisCuentasWidget(),
+              const SizedBox(height: 24),
+              const IngresosRecientesSidebarWidget(),
+              const SizedBox(height: 24),
+              const DistribucionIngresosWidget(),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MisCuentasWidget extends StatelessWidget {
+  const MisCuentasWidget({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -384,7 +321,6 @@ class RightSidebar extends StatelessWidget {
                   const SizedBox(width: 16),
                   _buildAccountAvatar("Mercantil", "\$ 4.3k", Icons.account_balance_wallet, colorScheme.tertiary),
                   const SizedBox(width: 16),
-                  // Botón para agregar nueva cuenta
                   Column(
                     children: [
                       CircleAvatar(
@@ -399,24 +335,53 @@ class RightSidebar extends StatelessWidget {
                 ],
               ),
             ),
-            
-            const SizedBox(height: 40),
+          ],
+        ),
+      ),
+    );
+  }
 
-            // 2. SECCIÓN: INGRESOS (ListView de registros)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("Ingresos Recientes", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.primaryColor)),
-              ],
-            ),
+  Widget _buildAccountAvatar(String name, String balance, IconData icon, Color color) {
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.topRight,
+          children: [
+            CircleAvatar(radius: 24, backgroundColor: color.withOpacity(0.1), child: Icon(icon, color: color)),
+            Container(
+              width: 12, height: 12,
+              decoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+            )
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        Text(balance, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+      ],
+    );
+  }
+}
+
+class IngresosRecientesSidebarWidget extends StatelessWidget {
+  const IngresosRecientesSidebarWidget({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Ingresos Recientes", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.primaryColor)),
             const SizedBox(height: 16),
-            // ListView.builder para la lista de ingresos
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: 3, // Mostramos 3 registros de ejemplo
+              itemCount: 3,
               itemBuilder: (context, index) {
-                // Datos simulados
                 final descripciones = ["Venta de Diseño", "Asesoría Logística", "Ofrenda / Donación"];
                 final montos = ["+\$ 450.00", "+\$ 320.00", "+\$ 100.00"];
                 final fechas = ["Hoy, 10:30 AM", "Ayer, 04:15 PM", "12 Ago, 09:00 AM"];
@@ -428,7 +393,7 @@ class RightSidebar extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(color: theme.scaffoldBackgroundColor, borderRadius: BorderRadius.circular(12)),
-                        child: Icon(Icons.arrow_downward, color: Colors.green, size: 16),
+                        child: const Icon(Icons.arrow_downward, color: Colors.green, size: 16),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -446,44 +411,45 @@ class RightSidebar extends StatelessWidget {
                 );
               },
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-            const SizedBox(height: 40),
+class DistribucionIngresosWidget extends StatelessWidget {
+  const DistribucionIngresosWidget({Key? key}) : super(key: key);
 
-            // 3. SECCIÓN: GRÁFICO DE INGRESOS (Dona / PieChart)
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Text("Distribución de Ingresos", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.primaryColor)),
             const SizedBox(height: 24),
             SizedBox(
-              height: 200, // Altura fija para el gráfico
+              height: 200,
               child: Stack(
                 children: [
                   PieChart(
                     PieChartData(
-                      sectionsSpace: 4, // Espacio en blanco entre las rebanadas
-                      centerSpaceRadius: 60, // Esto convierte el PieChart en una Dona
+                      sectionsSpace: 4,
+                      centerSpaceRadius: 60,
                       startDegreeOffset: -90,
                       sections: [
-                        PieChartSectionData(
-                          color: theme.primaryColor,
-                          value: 55,
-                          title: '', // Lo dejamos en blanco para un look más "Clean"
-                          radius: 25,
-                        ),
-                        PieChartSectionData(
-                          color: colorScheme.secondary,
-                          value: 30,
-                          title: '',
-                          radius: 25,
-                        ),
-                        PieChartSectionData(
-                          color: colorScheme.tertiary,
-                          value: 15,
-                          title: '',
-                          radius: 25,
-                        ),
+                        PieChartSectionData(color: theme.primaryColor, value: 55, title: '', radius: 25),
+                        PieChartSectionData(color: colorScheme.secondary, value: 30, title: '', radius: 25),
+                        PieChartSectionData(color: colorScheme.tertiary, value: 15, title: '', radius: 25),
                       ],
                     ),
                   ),
-                  // Texto en el centro de la Dona
                   Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -497,7 +463,6 @@ class RightSidebar extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            // Leyenda del gráfico
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -512,38 +477,6 @@ class RightSidebar extends StatelessWidget {
     );
   }
 
-  // Widget auxiliar para los avatares de cuentas
-  Widget _buildAccountAvatar(String name, String balance, IconData icon, Color color) {
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.topRight,
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: color.withOpacity(0.1),
-              child: Icon(icon, color: color),
-            ),
-            // Puntito verde simulando que la cuenta está conectada/activa
-            Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: Colors.green,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-              ),
-            )
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-        Text(balance, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-      ],
-    );
-  }
-
-  // Widget auxiliar para la leyenda del gráfico
   Widget _buildLegendItem(String label, Color color) {
     return Row(
       children: [
@@ -556,7 +489,7 @@ class RightSidebar extends StatelessWidget {
 }
 
 // =====================================================================
-// 6. EL GRID DEL DASHBOARD
+// DASHBOARD GRID Y TARJETAS
 // =====================================================================
 class DashboardGrid extends StatelessWidget {
   final String contextoFinanciero;
@@ -567,71 +500,77 @@ class DashboardGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final bool esMinisterial = contextoFinanciero == "Finanzas Ministeriales";
 
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            contextoFinanciero,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: theme.primaryColor),
-          ),
+          Text(contextoFinanciero, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: theme.primaryColor)),
           const SizedBox(height: 16),
+          
+          // 1. RESUMEN DE CABECERA
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildQuickStat("Total Balance", "\$ 21,550", "+ 52.5%", true, theme),
-              _buildQuickStat("Gastos", "\$ 1,200", "- 5.5%", false, theme),
-              _buildQuickStat("Ahorros", "\$ 5,500", "+ 12.3%", true, theme),
+              _buildQuickStat(esMinisterial ? "Ingresos Totales" : "Total Balance", esMinisterial ? "\$ 12,450" : "\$ 21,550", "+ 12.5%", true, theme),
+              _buildQuickStat(esMinisterial ? "Diezmos" : "Gastos", esMinisterial ? "\$ 1,245" : "\$ 1,200", esMinisterial ? "10%" : "- 5.5%", !esMinisterial, theme),
+              _buildQuickStat(esMinisterial ? "Ofrendas" : "Ahorros", esMinisterial ? "\$ 3,100" : "\$ 5,500", "+ 8.3%", true, theme),
             ],
           ),
           const SizedBox(height: 32),
+
+          // 2. WIDGETS GRANDES (Diezmos y Ofrendas / Ingresos y Gastos)
           Row(
             children: [
               Expanded(
                 child: CategoryCard(
-                  title: "Ingresos",
-                  amount: "\$ 21,550",
-                  percentage: "↑ 52.5%",
-                  icon: Icons.account_balance_wallet,
+                  title: esMinisterial ? "Diezmos Entregados" : "Ingresos", 
+                  amount: esMinisterial ? "\$ 1,245" : "\$ 21,550", 
+                  percentage: esMinisterial ? "Fiel" : "↑ 52.5%", 
+                  icon: esMinisterial ? Icons.auto_awesome : Icons.account_balance_wallet,
                   gradientColors: [colorScheme.primary, colorScheme.primary.withOpacity(0.7)],
-                  sparklineData: const [10, 20, 15, 30, 25, 40, 35, 50],
+                  sparklineData: esMinisterial ? [5, 10, 8, 15, 12, 20, 18, 25] : [10, 20, 15, 30, 25, 40, 35, 50],
                 ),
               ),
               const SizedBox(width: 20),
               Expanded(
                 child: CategoryCard(
-                  title: "Gastos",
-                  amount: "\$ 4,320",
-                  percentage: "↓ 12.5%",
-                  icon: Icons.shopping_bag,
+                  title: esMinisterial ? "Ofrendas Entregadas" : "Gastos", 
+                  amount: esMinisterial ? "\$ 3,100" : "\$ 4,320", 
+                  percentage: esMinisterial ? "Generoso" : "↓ 12.5%", 
+                  icon: esMinisterial ? Icons.volunteer_activism : Icons.shopping_bag,
                   gradientColors: [colorScheme.secondary, colorScheme.secondary.withOpacity(0.7)],
-                  sparklineData: const [50, 40, 45, 30, 35, 20, 25, 10],
+                  sparklineData: esMinisterial ? [10, 5, 20, 15, 30, 25, 35, 40] : [50, 40, 45, 30, 35, 20, 25, 10],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 32),
-          
-          // Eliminé el "const" problemático de esta lista
+
+          // 3. FILA DE MICRO-WIDGETS DINÁMICOS
           Row(
-            children: const [
-              Expanded(child: DeudasWidget()),
-              SizedBox(width: 20),
-              Expanded(child: AnalysisWidget()),
-              SizedBox(width: 20),
-              Expanded(child: SaldosWidget()),
+            children: [
+              Expanded(child: esMinisterial ? const FondosAhorroMinisterial() : const DeudasWidget()),
+              const SizedBox(width: 20),
+              Expanded(child: esMinisterial ? const MetasMinisterialesScroll() : const AnalysisWidget()),
+              const SizedBox(width: 20),
+              Expanded(child: esMinisterial ? const PactosEntregadosWidget() : const SaldosWidget()),
             ],
           ),
           const SizedBox(height: 32),
-          Text("Reciente", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.primaryColor)),
+
+          // 4. SECCIÓN RECIENTE
+          Text(esMinisterial ? "Ofrendas y Pactos Recientes" : "Reciente", 
+               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: theme.primaryColor)),
           const SizedBox(height: 16),
-          const RecienteGridWidget(),
+          RecienteGridWidget(esMinisterial: esMinisterial),
           const SizedBox(height: 32),
         ],
       ),
     );
   }
+  // ... resto de métodos auxiliares (_buildQuickStat)
 
   Widget _buildQuickStat(String label, String value, String percentage, bool isPositive, ThemeData theme) {
     return Column(
@@ -652,9 +591,6 @@ class DashboardGrid extends StatelessWidget {
   }
 }
 
-// =====================================================================
-// 7. COMPONENTES VISUALES Y GRÁFICOS
-// =====================================================================
 class CategoryCard extends StatelessWidget {
   final String title, amount, percentage;
   final IconData icon;
@@ -716,7 +652,9 @@ class CategoryCard extends StatelessWidget {
                   ),
                 ],
               ),
-              SizedBox(width: 80, height: 40, child: SparklineWidget(data: sparklineData, color: Colors.white))
+              RepaintBoundary(
+                child: SizedBox(width: 80, height: 40, child: SparklineWidget(data: sparklineData, color: Colors.white)),
+              )
             ],
           ),
         ],
@@ -769,11 +707,6 @@ class _SparklinePainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-// =====================================================================
-// 8. MICRO-WIDGETS Y RECIENTES
-// =====================================================================
-
-// WIDGET EXTRAÍDO PARA EVITAR EL ERROR DE SCOPE
 class MiniToggle extends StatelessWidget {
   final String active;
   final String inactive;
@@ -810,7 +743,8 @@ class DeudasWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
-      child: Padding(
+      child: Container(
+        height: 150, // Ajustado a 150px
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -822,7 +756,7 @@ class DeudasWidget extends StatelessWidget {
                 const MiniToggle(active: "Deudas", inactive: "Créditos"),
               ],
             ),
-            const SizedBox(height: 24),
+            const Spacer(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -830,22 +764,13 @@ class DeudasWidget extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Por pagar", style: TextStyle(color: Colors.grey, fontSize: 12)),
-                    const SizedBox(height: 4),
                     Text("\$ 15,000", style: TextStyle(color: theme.primaryColor, fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
                     const Text("Faltan \$45,000", style: TextStyle(color: Colors.grey, fontSize: 10)),
                   ],
                 ),
                 SizedBox(
-                  width: 50, height: 50,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      CircularProgressIndicator(value: 0.25, strokeWidth: 6, backgroundColor: theme.scaffoldBackgroundColor, color: theme.primaryColor),
-                      Center(child: Text("25%", style: TextStyle(fontSize: 10, color: theme.primaryColor))),
-                    ],
-                  ),
+                  width: 40, height: 40,
+                  child: CircularProgressIndicator(value: 0.25, strokeWidth: 4, backgroundColor: theme.scaffoldBackgroundColor, color: theme.primaryColor),
                 )
               ],
             ),
@@ -862,43 +787,34 @@ class AnalysisWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
-      child: Padding(
+      child: Container(
+        height: 150, // Ajustado a 150px
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text("Analysis", style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryColor)),
-            const SizedBox(height: 24),
+            const Spacer(),
             SizedBox(
-              height: 60,
+              height: 50,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _buildBar(40, theme.colorScheme.secondary),
-                  _buildBar(60, theme.primaryColor),
-                  _buildBar(35, theme.colorScheme.tertiary),
-                  _buildBar(50, theme.primaryColor.withOpacity(0.5)),
+                  _buildBar(30, theme.colorScheme.secondary),
+                  _buildBar(50, theme.primaryColor),
+                  _buildBar(25, theme.colorScheme.tertiary),
+                  _buildBar(40, theme.primaryColor.withOpacity(0.5)),
                 ],
               ),
             ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: const [
-                Icon(Icons.home, size: 14, color: Colors.grey),
-                Icon(Icons.directions_car, size: 14, color: Colors.grey),
-                Icon(Icons.shopping_cart, size: 14, color: Colors.grey),
-                Icon(Icons.fastfood, size: 14, color: Colors.grey),
-              ],
-            )
           ],
         ),
       ),
     );
   }
   Widget _buildBar(double height, Color color) {
-    return Container(width: 16, height: height, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)));
+    return Container(width: 12, height: height, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(6)));
   }
 }
 
@@ -908,7 +824,8 @@ class SaldosWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
-      child: Padding(
+      child: Container(
+        height: 150, // Ajustado a 150px
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -920,11 +837,8 @@ class SaldosWidget extends StatelessWidget {
                 const MiniToggle(active: "Cuentas", inactive: "Efectivo"),
               ],
             ),
-            const SizedBox(height: 24),
-            const Text("Balance Disponible", style: TextStyle(color: Colors.grey, fontSize: 12)),
-            const SizedBox(height: 4),
+            const Spacer(),
             Text("\$ 15,000", style: TextStyle(color: theme.primaryColor, fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
             const Text("+ \$4,041 hace 50 mins", style: TextStyle(color: Colors.grey, fontSize: 10)),
           ],
         ),
@@ -933,31 +847,32 @@ class SaldosWidget extends StatelessWidget {
   }
 }
 
-// =====================================================================
-// SECCIÓN RECIENTE (Grid 2x2 - Estilo Líneas Gruesas / List Tile)
-// =====================================================================
-
 class RecienteGridWidget extends StatelessWidget {
-  const RecienteGridWidget({Key? key}) : super(key: key);
+  final bool esMinisterial;
+  const RecienteGridWidget({Key? key, this.esMinisterial = false}) : super(key: key);
   
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         int crossAxisCount = constraints.maxWidth < 600 ? 1 : 2;
-        
-        // Cambiamos GridView.count por un GridView con delegado
-        // Esto nos permite usar "mainAxisExtent" para fijar la altura
         return GridView(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
-            mainAxisSpacing: 12, // Espacio vertical entre líneas
-            crossAxisSpacing: 16, // Espacio horizontal entre columnas
-            mainAxisExtent: 70, // ¡LA MAGIA AQUÍ! Forzamos la altura a 70px exactos
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 16,
+            mainAxisExtent: 70,
           ),
-          children: const [
+          children: esMinisterial 
+          ? const [
+            RecienteItemCard(titulo: "Ofrenda General", monto: "+\$ 50.00", isIngreso: true, icono: Icons.church),
+            RecienteItemCard(titulo: "Pacto por Familia", monto: "+\$ 100.00", isIngreso: true, icono: Icons.handshake),
+            RecienteItemCard(titulo: "Ofrenda Misionera", monto: "+\$ 30.00", isIngreso: true, icono: Icons.public),
+            RecienteItemCard(titulo: "Siembra Especial", monto: "+\$ 200.00", isIngreso: true, icono: Icons.spa),
+          ]
+          : const [
             RecienteItemCard(titulo: "Pago de Luz", monto: "-\$ 45.00", isIngreso: false, icono: Icons.electric_bolt),
             RecienteItemCard(titulo: "Ahorro Vehículo", monto: "+\$ 150.00", isIngreso: true, icono: Icons.directions_car),
             RecienteItemCard(titulo: "Compra Supermercado", monto: "-\$ 120.00", isIngreso: false, icono: Icons.shopping_cart),
@@ -980,12 +895,10 @@ class RecienteItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
-      // Reducimos el padding vertical para que encaje perfecto en la "línea gruesa"
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         child: Row(
           children: [
-            // Círculo del icono ligeramente más pequeño
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -998,30 +911,128 @@ class RecienteItemCard extends StatelessWidget {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center, // Centrado vertical perfecto
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    titulo, 
-                    // Letra un poco más estilizada para la línea
-                    style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryColor, fontSize: 14), 
-                    maxLines: 1, 
-                    overflow: TextOverflow.ellipsis
-                  ),
+                  Text(titulo, style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryColor, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 2),
-                  Text(
-                    isIngreso ? "Ahorro / Ingreso" : "Gasto / Pago", 
-                    style: const TextStyle(color: Colors.grey, fontSize: 11)
-                  ),
+                  Text(isIngreso ? "Ahorro / Ingreso" : "Gasto / Pago", style: const TextStyle(color: Colors.grey, fontSize: 11)),
                 ],
               ),
             ),
-            Text(
-              monto, 
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isIngreso ? Colors.green : theme.primaryColor)
-            ),
+            Text(monto, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isIngreso ? Colors.green : theme.primaryColor)),
           ],
         ),
       ),
+    );
+  }
+}
+
+// =====================================================================
+// WIDGETS EXCLUSIVOS: FINANZAS MINISTERIALES (ALTURA UNIFORME 150px)
+// =====================================================================
+
+class FondosAhorroMinisterial extends StatelessWidget {
+  const FondosAhorroMinisterial({Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Container(
+        height: 150, // Altura Clave para Uniformidad
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("Fondos Ahorro", style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryColor)),
+            const Spacer(),
+            Text("\$ 5,200", style: TextStyle(color: theme.primaryColor, fontSize: 24, fontWeight: FontWeight.bold)),
+            const Text("Reservado para misiones", style: TextStyle(color: Colors.grey, fontSize: 11)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MetasMinisterialesScroll extends StatelessWidget {
+  const MetasMinisterialesScroll({Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Container(
+        height: 150, // Altura Clave para Uniformidad
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        child: ListView(
+          children: [
+            _buildMetaItem(context, "Construcción Templo", 0.85),
+            const SizedBox(height: 12),
+            _buildMetaItem(context, "Sonido Nuevo", 1.0),
+            const SizedBox(height: 12),
+            _buildMetaItem(context, "Viaje Misionero", 0.40),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetaItem(BuildContext context, String titulo, double progreso) {
+    final alcanzada = progreso >= 1.0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(child: Text(titulo, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold))),
+            if (alcanzada) const Icon(Icons.emoji_events, color: Colors.amber, size: 16),
+          ],
+        ),
+        const SizedBox(height: 5),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: LinearProgressIndicator(
+            value: progreso,
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            color: alcanzada ? Colors.amber : Theme.of(context).primaryColor,
+            minHeight: 6,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class PactosEntregadosWidget extends StatelessWidget {
+  const PactosEntregadosWidget({Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Container(
+        height: 150, // Altura Clave para Uniformidad
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Pactos", style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryColor)),
+            const Spacer(),
+            _buildPactoItem("\$ 500", "15 Feb"),
+            const Divider(height: 16),
+            _buildPactoItem("\$ 200", "01 Feb"),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPactoItem(String monto, String fecha) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(monto, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        Text(fecha, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+      ],
     );
   }
 }
