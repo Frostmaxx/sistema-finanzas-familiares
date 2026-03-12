@@ -13,7 +13,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
 // MAIN LAYOUT
 // =====================================================================
 class MainDashboardLayout extends StatelessWidget {
-  const MainDashboardLayout({Key? key}) : super(key: key);
+  const MainDashboardLayout({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -43,18 +43,18 @@ class MainDashboardLayout extends StatelessWidget {
       body: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth >= 1200) {
-            return Row(
+            return const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Expanded(flex: 2, child: LeftSidebar()),
                 Expanded(flex: 6, child: CentralBody()),
                 Expanded(flex: 2, child: RightSidebar()),
               ],
             );
           } else if (constraints.maxWidth >= 900) {
-            return Row(
+            return const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Expanded(flex: 2, child: LeftSidebar()),
                 Expanded(flex: 8, child: CentralBody()),
               ],
@@ -72,7 +72,7 @@ class MainDashboardLayout extends StatelessWidget {
 // CENTRAL BODY
 // =====================================================================
 class CentralBody extends StatelessWidget {
-  const CentralBody({Key? key}) : super(key: key);
+  const CentralBody({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -107,10 +107,7 @@ class CentralBody extends StatelessWidget {
                           color: Theme.of(context).primaryColor,
                           borderRadius: BorderRadius.circular(30),
                         ),
-                        // Agregamos un onTap para forzar la reconstrucción de las Sidebars
-                        onTap: (index) {
-                          (context as Element).markNeedsBuild();
-                        },
+
                         tabs: const [
                           Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text("Finanzas Personales"))),
                           Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text("Finanzas Familiares"))),
@@ -158,12 +155,13 @@ class CentralBody extends StatelessWidget {
       ),
     );
   }
+}
 
 // =====================================================================
 // SIDEBAR IZQUIERDO (Left Sidebar)
 // =====================================================================
 class LeftSidebar extends StatelessWidget {
-  const LeftSidebar({Key? key}) : super(key: key);
+  const LeftSidebar({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -256,7 +254,7 @@ class LeftSidebar extends StatelessWidget {
 // PANEL DERECHO (Right Sidebar)
 // =====================================================================
 class RightSidebar extends StatelessWidget {
-  const RightSidebar({Key? key}) : super(key: key);
+  const RightSidebar({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -290,7 +288,7 @@ class RightSidebar extends StatelessWidget {
 }
 
 class MisCuentasWidget extends StatelessWidget {
-  const MisCuentasWidget({Key? key}) : super(key: key);
+  const MisCuentasWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -347,7 +345,7 @@ class MisCuentasWidget extends StatelessWidget {
         Stack(
           alignment: Alignment.topRight,
           children: [
-            CircleAvatar(radius: 24, backgroundColor: color.withOpacity(0.1), child: Icon(icon, color: color)),
+            CircleAvatar(radius: 24, backgroundColor: color.withValues(alpha: 0.1), child: Icon(icon, color: color)),
             Container(
               width: 12, height: 12,
               decoration: BoxDecoration(color: Colors.green, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
@@ -363,7 +361,7 @@ class MisCuentasWidget extends StatelessWidget {
 }
 
 class IngresosRecientesSidebarWidget extends StatelessWidget {
-  const IngresosRecientesSidebarWidget({Key? key}) : super(key: key);
+  const IngresosRecientesSidebarWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -419,7 +417,7 @@ class IngresosRecientesSidebarWidget extends StatelessWidget {
 }
 
 class DistribucionIngresosWidget extends StatelessWidget {
-  const DistribucionIngresosWidget({Key? key}) : super(key: key);
+  const DistribucionIngresosWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -494,7 +492,7 @@ class DistribucionIngresosWidget extends StatelessWidget {
 class DashboardGrid extends StatelessWidget {
   final String contextoFinanciero;
   
-  const DashboardGrid({Key? key, required this.contextoFinanciero}) : super(key: key);
+  const DashboardGrid({super.key, required this.contextoFinanciero});
 
   @override
   Widget build(BuildContext context) {
@@ -529,7 +527,7 @@ class DashboardGrid extends StatelessWidget {
                   amount: esMinisterial ? "\$ 1,245" : "\$ 21,550", 
                   percentage: esMinisterial ? "Fiel" : "↑ 52.5%", 
                   icon: esMinisterial ? Icons.auto_awesome : Icons.account_balance_wallet,
-                  gradientColors: [colorScheme.primary, colorScheme.primary.withOpacity(0.7)],
+                  gradientColors: [colorScheme.primary, colorScheme.primary.withValues(alpha: 0.7)],
                   sparklineData: esMinisterial ? [5, 10, 8, 15, 12, 20, 18, 25] : [10, 20, 15, 30, 25, 40, 35, 50],
                 ),
               ),
@@ -540,7 +538,7 @@ class DashboardGrid extends StatelessWidget {
                   amount: esMinisterial ? "\$ 3,100" : "\$ 4,320", 
                   percentage: esMinisterial ? "Generoso" : "↓ 12.5%", 
                   icon: esMinisterial ? Icons.volunteer_activism : Icons.shopping_bag,
-                  gradientColors: [colorScheme.secondary, colorScheme.secondary.withOpacity(0.7)],
+                  gradientColors: [colorScheme.secondary, colorScheme.secondary.withValues(alpha: 0.7)],
                   sparklineData: esMinisterial ? [10, 5, 20, 15, 30, 25, 35, 40] : [50, 40, 45, 30, 35, 20, 25, 10],
                 ),
               ),
@@ -598,9 +596,9 @@ class CategoryCard extends StatelessWidget {
   final List<double> sparklineData;
 
   const CategoryCard({
-    Key? key, required this.title, required this.amount, required this.percentage,
+    super.key, required this.title, required this.amount, required this.percentage,
     required this.icon, required this.gradientColors, required this.sparklineData,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -609,7 +607,7 @@ class CategoryCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
         gradient: LinearGradient(colors: gradientColors, begin: Alignment.topLeft, end: Alignment.bottomRight),
-        boxShadow: [BoxShadow(color: gradientColors.first.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
+        boxShadow: [BoxShadow(color: gradientColors.first.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 8))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -621,7 +619,7 @@ class CategoryCard extends StatelessWidget {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                     child: Icon(icon, color: Colors.white, size: 20),
                   ),
                   const SizedBox(width: 12),
@@ -666,7 +664,7 @@ class CategoryCard extends StatelessWidget {
 class SparklineWidget extends StatelessWidget {
   final List<double> data;
   final Color color;
-  const SparklineWidget({Key? key, required this.data, required this.color}) : super(key: key);
+  const SparklineWidget({super.key, required this.data, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -711,7 +709,7 @@ class MiniToggle extends StatelessWidget {
   final String active;
   final String inactive;
 
-  const MiniToggle({Key? key, required this.active, required this.inactive}) : super(key: key);
+  const MiniToggle({super.key, required this.active, required this.inactive});
 
   @override
   Widget build(BuildContext context) {
@@ -738,7 +736,7 @@ class MiniToggle extends StatelessWidget {
 }
 
 class DeudasWidget extends StatelessWidget {
-  const DeudasWidget({Key? key}) : super(key: key);
+  const DeudasWidget({super.key});
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -782,7 +780,7 @@ class DeudasWidget extends StatelessWidget {
 }
 
 class AnalysisWidget extends StatelessWidget {
-  const AnalysisWidget({Key? key}) : super(key: key);
+  const AnalysisWidget({super.key});
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -804,7 +802,7 @@ class AnalysisWidget extends StatelessWidget {
                   _buildBar(30, theme.colorScheme.secondary),
                   _buildBar(50, theme.primaryColor),
                   _buildBar(25, theme.colorScheme.tertiary),
-                  _buildBar(40, theme.primaryColor.withOpacity(0.5)),
+                  _buildBar(40, theme.primaryColor.withValues(alpha: 0.5)),
                 ],
               ),
             ),
@@ -819,7 +817,7 @@ class AnalysisWidget extends StatelessWidget {
 }
 
 class SaldosWidget extends StatelessWidget {
-  const SaldosWidget({Key? key}) : super(key: key);
+  const SaldosWidget({super.key});
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -849,7 +847,7 @@ class SaldosWidget extends StatelessWidget {
 
 class RecienteGridWidget extends StatelessWidget {
   final bool esMinisterial;
-  const RecienteGridWidget({Key? key, this.esMinisterial = false}) : super(key: key);
+  const RecienteGridWidget({super.key, this.esMinisterial = false});
   
   @override
   Widget build(BuildContext context) {
@@ -889,7 +887,7 @@ class RecienteItemCard extends StatelessWidget {
   final bool isIngreso;
   final IconData icono;
   
-  const RecienteItemCard({Key? key, required this.titulo, required this.monto, required this.isIngreso, required this.icono}) : super(key: key);
+  const RecienteItemCard({super.key, required this.titulo, required this.monto, required this.isIngreso, required this.icono});
 
   @override
   Widget build(BuildContext context) {
@@ -902,7 +900,7 @@ class RecienteItemCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: isIngreso ? Colors.green.withOpacity(0.1) : Colors.redAccent.withOpacity(0.1), 
+                color: isIngreso ? Colors.green.withValues(alpha: 0.1) : Colors.redAccent.withValues(alpha: 0.1), 
                 shape: BoxShape.circle
               ),
               child: Icon(icono, color: isIngreso ? Colors.green : Colors.redAccent, size: 20),
@@ -932,7 +930,7 @@ class RecienteItemCard extends StatelessWidget {
 // =====================================================================
 
 class FondosAhorroMinisterial extends StatelessWidget {
-  const FondosAhorroMinisterial({Key? key}) : super(key: key);
+  const FondosAhorroMinisterial({super.key});
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -956,7 +954,7 @@ class FondosAhorroMinisterial extends StatelessWidget {
 }
 
 class MetasMinisterialesScroll extends StatelessWidget {
-  const MetasMinisterialesScroll({Key? key}) : super(key: key);
+  const MetasMinisterialesScroll({super.key});
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -1004,7 +1002,7 @@ class MetasMinisterialesScroll extends StatelessWidget {
 }
 
 class PactosEntregadosWidget extends StatelessWidget {
-  const PactosEntregadosWidget({Key? key}) : super(key: key);
+  const PactosEntregadosWidget({super.key});
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1032,6 +1030,75 @@ class PactosEntregadosWidget extends StatelessWidget {
       children: [
         Text(monto, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
         Text(fecha, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+      ],
+    );
+  }
+}
+
+// =====================================================================
+// WIDGET FALTANTE: DIEZMOS ENTREGADOS (Para Sidebar Ministerial)
+// =====================================================================
+class DiezmosEntregadosWidget extends StatelessWidget {
+  const DiezmosEntregadosWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Diezmos Entregados", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: theme.primaryColor)),
+                const Icon(Icons.more_horiz, color: Colors.grey),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildDiezmoItem(context, "Diezmo Febrero", "+\$ 124.50", "Entregado", "28 Feb"),
+            const SizedBox(height: 12),
+            _buildDiezmoItem(context, "Diezmo Enero", "+\$ 98.00", "Entregado", "30 Ene"),
+            const SizedBox(height: 12),
+            _buildDiezmoItem(context, "Diezmo Diciembre", "+\$ 150.00", "Entregado", "28 Dic"),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDiezmoItem(BuildContext context, String titulo, String monto, String estado, String fecha) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: theme.primaryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(Icons.auto_awesome, color: theme.primaryColor, size: 16),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(titulo, style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryColor, fontSize: 14)),
+              Text(fecha, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+            ],
+          ),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(monto, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 14)),
+            Text(estado, style: TextStyle(color: Colors.green.withValues(alpha: 0.7), fontSize: 10)),
+          ],
+        ),
       ],
     );
   }

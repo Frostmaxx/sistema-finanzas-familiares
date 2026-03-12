@@ -34,7 +34,7 @@ class ThemeProvider extends ChangeNotifier {
         surfaceColor = const Color(0xFFE5E5E5);    // Gris muy ligero para widgets
         break;
       case AppPalette.azul:
-      default:
+
         primaryColor = const Color(0xFF0B1D39);
         backgroundColor = const Color(0xFFCED8E0); // Tu azul/gris actual
         surfaceColor = const Color(0xFFDAE4ED);    // Azul ligero armónico para widgets
@@ -53,14 +53,14 @@ class ThemeProvider extends ChangeNotifier {
       cardTheme: CardThemeData(
         color: surfaceColor, // Las tarjetas ahora toman este color automáticamente
         elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.1),
+        shadowColor: Colors.black.withValues(alpha: 0.1),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30.0),
         ),
       ),
       tabBarTheme: TabBarThemeData(
         labelColor: Colors.white,
-        unselectedLabelColor: primaryColor.withOpacity(0.6),
+        unselectedLabelColor: primaryColor.withValues(alpha: 0.6),
         indicatorColor: contrastOrange,
       ),
     );
